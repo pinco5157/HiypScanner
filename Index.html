@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>HYIP Scanner v9</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:system-ui,-apple-system,sans-serif;font-size:14px;background:#f5f5f5;color:#1a1a1a;padding:16px;max-width:600px;margin:0 auto;min-height:100vh}
+input,select,textarea{width:100%;padding:12px;font-size:16px;border:1px solid #d0d0d0;border-radius:10px;background:#fff;color:#1a1a1a;outline:none;-webkit-appearance:none;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:#888}
+textarea{resize:vertical;min-height:100px;line-height:1.5}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath fill='%23999' d='M5 6L0 0h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
+.btn{display:block;width:100%;padding:13px;font-size:14px;font-weight:500;cursor:pointer;border:1px solid #d0d0d0;border-radius:10px;background:#fff;color:#666;margin-top:8px;text-align:center;touch-action:manipulation;font-family:inherit}
+.btn:active{opacity:0.7}
+.btnp{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btnd{color:#c0392b;border-color:#e0b0b0;background:#fff}
+.btnsm{display:inline-block;width:auto;padding:6px 12px;font-size:12px;margin:0}
+.btnrow{display:flex;gap:8px;margin-top:8px}
+.btnrow .btn{margin:0}
+.card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:12px 14px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.lbl{display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.6px;margin-bottom:6px}
+.val{font-size:20px;font-weight:600;color:#1a1a1a}
+.sect{font-size:11px;color:#888;text-transform:uppercase;letter-spacing:0.8px;margin:20px 0 10px;padding-bottom:6px;border-bottom:1px solid #e0e0e0}
+.pill{display:inline-block;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:600}
+.flag{display:flex;gap:8px;padding:8px 10px;border-radius:8px;margin-bottom:5px;font-size:13px;align-items:flex-start;line-height:1.5}
+.chk{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid #ebebeb;cursor:pointer}
+.chk:last-child{border:none}
+.chk span{font-size:14px;color:#333}
+.chk input[type=checkbox]{width:22px;height:22px;flex-shrink:0;accent-color:#1a1a1a;cursor:pointer}
+.track{height:10px;border-radius:5px;background:#e8e8e8;overflow:hidden;margin:8px 0}
+.bar{height:100%;border-radius:5px;transition:width 0.4s}
+.er{padding:11px;background:#fdecea;border-radius:8px;color:#c0392b;font-size:13px;margin-top:10px;line-height:1.5}
+.ok{padding:11px;background:#e8f8f0;border-radius:8px;color:#1a7a4a;font-size:13px;margin-top:10px}
+.cprow{padding:10px 0;border-bottom:1px solid #ebebeb}
+.cprow:last-child{border:none}
+.tagbadge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:10px;font-size:11px;font-weight:500;background:#e8f8f0;color:#1a7a4a;border:1px solid #a0d8b8}
+.match-row{background:#f0faf5}
+.chart-wrap{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
+a{color:#2563eb}
+.back-btn{font-size:13px;color:#888;background:none;border:none;cursor:pointer;padding:0;margin-bottom:18px;display:flex;align-items:center;gap:6px}
+.platform-card{background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.empty{padding:40px 20px;text-align:center;color:#aaa;font-size:13px;line-height:1.7}
+.green{color:#1a7a4a}.red{color:#c0392b}.yellow{color:#b7770d}.blue{color:#2563eb}.purple{color:#7c3aed}
+.bg-green{background:#e8f8f0}.bg-red{background:#fdecea}.bg-yellow{background:#fef9e7}.bg-blue{background:#e8f0fe}.bg-gray{background:#f0f0f0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const LS={get(k){try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+
+let S={
+  tab:0,view:null,
+  platforms:LS.get('hs_platforms')||[],
+  pForm:{name:'',url:'',status:'active',mechanics:'',notes:'',rate:1.5,period:'daily',lock:30,avgInv:200,users:500,ref:false,refPct:5,flags:{anon:false,noAudit:false,ai:false,mlm:false,guaranteed:false}},
+  pIdx:null,
+  walletNet:'BSC',walletAddr:LS.get('hs_walletAddr')||'',
+  apiKeyETH:LS.get('hs_apikey_eth')||'',
+  apiKeyMoralis:LS.get('hs_apikey_moralis')||'',
+  apiKeyMoralis:LS.get('hs_apikey_moralis')||'',
+  apiKeyMoralis:LS.get('hs_apikey_moralis')||'',
+  walletLoading:false,walletErr:'',walletData:null,walletTxDays:30,walletTokens:[],
+  tags:LS.get('hs_tags')||{},
+  tagForm:{addr:'',label:'',category:'platform',network:'BSC',notes:'',existing:false},
+  search:'',
+  risk:{rate:1.5,period:'daily',lock:30,avgInv:200,users:500,ref:true,refPct:5,mechanics:'',
+    flags:{anon:false,noAudit:false,ai:false,mlm:false,guaranteed:false}},
+  charts:{}
+};
+
+const NETS={
+  BSC:{sym:'BNB',dec:18,ex:'https://bscscan.com/address/'},
+  ETH:{sym:'ETH',dec:18,api:'https://api.etherscan.io/v2/api',chainId:1,ex:'https://etherscan.io/address/'},
+  TRON:{sym:'TRX',dec:6,ex:'https://tronscan.org/#/address/'}
+};
+const CATS={
+  platform:{l:'Piattaforma',c:'red',bg:'bg-red'},
+  promoter:{l:'Promoter',c:'yellow',bg:'bg-yellow'},
+  suspicious:{l:'Sospetto',c:'red',bg:'bg-red'},
+  exchange:{l:'Exchange',c:'blue',bg:'bg-blue'},
+  contract:{l:'Contratto',c:'purple',bg:'bg-gray'},
+  other:{l:'Altro',c:'',bg:'bg-gray'}
+};
+const STATUS={active:{c:'#1a7a4a',l:'Attiva'},suspected:{c:'#b7770d',l:'Sospetta'},scam:{c:'#c0392b',l:'Scam/Chiusa'}};
+const FLAGS_LIST=[['anon','Team anonimo'],['noAudit','No audit'],['ai','AI/Bot'],['mlm','MLM'],['guaranteed','Garantito']];
+const FLAGS_FULL=[['anon','Team anonimo / identità non verificabili'],['noAudit','Smart contract non auditato'],['ai','"AI / Bot trading" come giustificazione'],['mlm','Struttura MLM multi-livello'],['guaranteed','Rendimento garantito / assicurato']];
+
+function save(){LS.set('hs_platforms',S.platforms);LS.set('hs_tags',S.tags);LS.set('hs_apikey_eth',S.apiKeyETH);LS.set('hs_apikey_moralis',S.apiKeyMoralis);LS.set('hs_walletAddr',S.walletAddr);}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function fmt(n,d=2){if(!n||isNaN(n))return'0';if(Math.abs(n)<0.001)return n.toExponential(2);return n.toLocaleString('it-IT',{maximumFractionDigits:d,minimumFractionDigits:0})}
+function short(a){if(!a)return'—';return a.slice(0,8)+'…'+a.slice(-6)}
+
+function calcRisk(h){
+  const d=h.period==='daily'?h.rate:h.period==='weekly'?h.rate/7:h.rate/30;
+  let score=0;const flags=[];
+  if(d>3){score+=70;flags.push({l:'critical',t:`${h.rate}%/${h.period} → impossibile`});}
+  else if(d>1.5){score+=50;flags.push({l:'high',t:`${h.rate}%/${h.period} → fragilità estrema`});}
+  else if(d>0.8){score+=35;flags.push({l:'high',t:`${h.rate}%/${h.period} → HYIP alto rischio`});}
+  else if(d>0.5){score+=20;flags.push({l:'medium',t:`${h.rate}%/${h.period} → sospetto`});}
+  else if(d>0.2){score+=10;flags.push({l:'medium',t:`${h.rate}%/${h.period} → al limite`});}
+  if(h.lock===0){score+=15;flags.push({l:'high',t:'Nessun lock → bank run immediato'});}
+  else if(h.lock<7){score+=8;flags.push({l:'medium',t:`Lock ${h.lock}gg troppo breve`});}
+  if(h.ref){score+=15;flags.push({l:'medium',t:`Referral ${h.refPct}% → struttura Ponzi`});}
+  if(h.flags.anon){score+=20;flags.push({l:'high',t:'Team anonimo'});}
+  if(h.flags.noAudit){score+=15;flags.push({l:'high',t:'Contract non auditato'});}
+  if(h.flags.ai){score+=25;flags.push({l:'critical',t:'"AI/Bot trading" → alibi classico scam'});}
+  if(h.flags.mlm){score+=20;flags.push({l:'high',t:'MLM multi-livello confermato'});}
+  if(h.flags.guaranteed){score+=20;flags.push({l:'critical',t:'Rendimento garantito → illegale'});}
+  score=Math.min(score,100);
+  const pool=h.avgInv*h.users,obl=pool*(d/100),ref=h.ref?(pool*(h.refPct/100)/365):0,total=obl+ref;
+  return{score,flags,d,pool,total,newUsers:total/h.avgInv,collapse:Math.round(100/d),doubling:Math.round(72/d)};
+}
+function riskColor(s){
+  if(s<25)return{c:'#1a7a4a',bg:'#e8f8f0',l:'Basso rischio'};
+  if(s<50)return{c:'#b7770d',bg:'#fef9e7',l:'Sospetto'};
+  if(s<75)return{c:'#c0392b',bg:'#fdecea',l:'Alto rischio'};
+  return{c:'#c0392b',bg:'#fdecea',l:'Quasi certamente scam'};
+}
+function flagColor(l){
+  if(l==='critical'||l==='high')return{c:'#c0392b',bg:'#fdecea',lbl:l==='critical'?'CRITICO':'ALTO'};
+  if(l==='medium')return{c:'#b7770d',bg:'#fef9e7',lbl:'MEDIO'};
+  return{c:'#2563eb',bg:'#e8f0fe',lbl:'BASSO'};
+}
+function parsePlans(text){
+  if(!text)return[];const plans=[];
+  text.split(/[\n;]+/).forEach(line=>{
+    const pct=line.match(/(\d+\.?\d*)\s*%/),days=line.match(/(\d+)\s*(?:gg|giorni|days)/i);
+    const usd=line.match(/\$\s*(\d+\.?\d*)/),fix=line.match(/genera\s*\$?\s*(\d+\.?\d*)/i)||line.match(/(\d+\.?\d*)\s*\$?\s*al?\s*giorno/i);
+    if(pct||fix)plans.push({raw:line.trim().slice(0,70),pct:pct?parseFloat(pct[1]):null,days:days?parseInt(days[1]):null,usd:usd?parseFloat(usd[1]):null,fixed:fix?parseFloat(fix[1]):null});
+  });return plans;
+}
+
+async function scanWallet(){
+  const addrEl=document.getElementById('wa-addr');
+  const keyEl=document.getElementById('wa-key');
+  const addr=(addrEl?addrEl.value.trim():S.walletAddr);
+  const key=(keyEl?keyEl.value.trim():'');
+  S.walletAddr=addr;
+  if(S.walletNet==='BSC'&&key)S.apiKeyMoralis=key;
+  if(S.walletNet==='ETH'&&key)S.apiKeyETH=key;
+  save();
+  if(!addr){S.walletErr='Inserisci un indirizzo wallet';render();return;}
+  if(S.walletNet==='BSC'&&!S.apiKeyMoralis){S.walletErr='Inserisci la API key Moralis';render();return;}
+  if(S.walletNet==='ETH'&&!S.apiKeyETH){S.walletErr='Inserisci la API key Etherscan V2';render();return;}
+  S.walletLoading=true;S.walletErr='';S.walletData=null;render();
+  try{
+    let txs=[];
+    if(S.walletNet==='TRON'){
+      const r=await fetch(`https://api.trongrid.io/v1/accounts/${addr}/transactions?limit=200&order_by=block_timestamp,desc`);
+      const d=await r.json();
+      if(!d.data)throw new Error('Wallet non trovato su TRON');
+      txs=d.data;
+    }else{
+      if(S.walletNet==='BSC'){
+        // Moralis API for BSC - supports native + ERC20
+        const moralisBase=`https://deep-index.moralis.io/api/v2.2/${addr}`;
+        const headers={'X-API-Key':S.apiKeyMoralis,'accept':'application/json'};
+        const [r1,r2]=await Promise.all([
+          fetch(moralisBase+'/transactions?chain=bsc&limit=100',{headers}),
+          fetch(moralisBase+'/erc20/transfers?chain=bsc&limit=100',{headers})
+        ]);
+        const [t1,t2]=await Promise.all([r1.text(),r2.text()]);
+        let d1,d2;
+        try{d1=JSON.parse(t1);}catch(e){throw new Error('Moralis non risponde. Verifica la API key.');}
+        try{d2=JSON.parse(t2);}catch(e){d2={result:[]};}
+        if(d1.message){throw new Error('Moralis: '+d1.message);}
+        // Convert Moralis native tx format
+        const native=(d1.result||[]).map(tx=>({
+          hash:tx.hash,from:tx.from_address,to:tx.to_address,
+          value:tx.value||'0',timeStamp:Math.floor(new Date(tx.block_timestamp).getTime()/1000),
+          isError:'0'
+        }));
+        // Convert Moralis ERC20 format
+        const tokens=(d2.result||[]).map(tx=>({
+          hash:tx.transaction_hash,from:tx.from_address,to:tx.to_address,
+          value:tx.value||'0',timeStamp:Math.floor(new Date(tx.block_timestamp).getTime()/1000),
+          isError:'0',tokenSymbol:tx.token_symbol||'?',tokenDecimal:tx.token_decimals||18
+        }));
+        txs=[...native,...tokens].sort((a,b)=>b.timeStamp-a.timeStamp);
+        S.walletTokens=tokens;
+      }else{
+        // Etherscan V2 for ETH
+        const n=NETS[S.walletNet];
+        const base=`${n.api}?chainid=${n.chainId}&address=${addr.toLowerCase()}&startblock=0&endblock=99999999&page=1&offset=1000&sort=desc&apikey=${S.apiKeyETH}`;
+        const [r1,r2]=await Promise.all([fetch(base+'&module=account&action=txlist'),fetch(base+'&module=account&action=tokentx')]);
+        const [t1,t2]=await Promise.all([r1.text(),r2.text()]);
+        let d1,d2;
+        try{d1=JSON.parse(t1);}catch(e){throw new Error('API non risponde. Verifica la API key.');}
+        try{d2=JSON.parse(t2);}catch(e){d2={status:'0',result:[]};}
+        if(d1.status!=='1'&&d1.message!=='No transactions found'&&d1.result!=='No transactions found')
+          throw new Error(d1.result||d1.message||'Errore API');
+        const native=(d1.status==='1'&&Array.isArray(d1.result))?d1.result:[];
+        const tokens=(d2.status==='1'&&Array.isArray(d2.result))?d2.result:[];
+        txs=[...native,...tokens].sort((a,b)=>parseInt(b.timeStamp)-parseInt(a.timeStamp));
+        S.walletTokens=tokens;
+      }
+    }
+    S.walletData=processWallet(txs,addr,S.walletNet);
+    if(S.walletData.firstTs&&S.walletData.lastTs)
+      S.walletTxDays=Math.max(1,Math.round((S.walletData.lastTs-S.walletData.firstTs)/86400));
+  }catch(e){S.walletErr=e.message;}
+  S.walletLoading=false;render();
+  if(S.walletData)setTimeout(()=>drawCharts(),100);
+}
+
+function processWallet(txs,wallet,net){
+  const wl=wallet.toLowerCase(),dec=NETS[net].dec,sym=NETS[net].sym;
+  let totalIn=0,totalOut=0;const cps={};const recent=[];let firstTs=null,lastTs=null;const daily={};
+  if(net==='TRON'){
+    txs.forEach(tx=>{
+      (tx.raw_data?.contract||[]).forEach(c=>{
+        if(c.type==='TransferContract'){
+          const v=c.parameter?.value||{};
+          const from=(v.owner_address||'').toLowerCase(),to=(v.to_address||'').toLowerCase();
+          const amount=(v.amount||0)/1e6,ts=tx.raw_data?.timestamp?tx.raw_data.timestamp/1000:null;
+          if(ts){if(!firstTs||ts<firstTs)firstTs=ts;if(!lastTs||ts>lastTs)lastTs=ts;}
+          const day=ts?new Date(ts*1000).toLocaleDateString('it-IT'):'?';
+          const isIn=to===wl,isOut=from===wl;
+          if(isIn&&from){totalIn+=amount;cps[from]=cps[from]||{s:0,r:0,n:0,syms:{}};cps[from].r+=amount;cps[from].n++;cps[from].syms['TRX']=(cps[from].syms['TRX']||0)+amount;daily[day]=daily[day]||{in:0,out:0};daily[day].in+=amount;}
+          if(isOut&&to){totalOut+=amount;cps[to]=cps[to]||{s:0,r:0,n:0,syms:{}};cps[to].s+=amount;cps[to].n++;cps[to].syms['TRX']=(cps[to].syms['TRX']||0)+amount;daily[day]=daily[day]||{in:0,out:0};daily[day].out+=amount;}
+          if(recent.length<20)recent.push({from:v.owner_address||'',to:v.to_address||'',amount,isIn,isOut,ts:day,sym:'TRX'});
+        }
+      });
+    });
+  }else{
+    txs.forEach(tx=>{
+      if(tx.isError==='1')return;
+      let rawVal=tx.value||'0';
+      if(typeof rawVal==='string'&&rawVal.startsWith('0x'))rawVal=parseInt(rawVal,16);
+      const txDec=tx.tokenDecimal?parseInt(tx.tokenDecimal):dec;
+      const txSym=tx.tokenSymbol||sym;
+      const value=parseFloat(rawVal)/Math.pow(10,txDec);
+      const from=(tx.from||'').toLowerCase(),to=(tx.to||'').toLowerCase();
+      const ts=parseInt(tx.timeStamp);
+      if(ts){if(!firstTs||ts<firstTs)firstTs=ts;if(!lastTs||ts>lastTs)lastTs=ts;}
+      const day=new Date(ts*1000).toLocaleDateString('it-IT');
+      const isIn=to===wl,isOut=from===wl;
+      if(isIn){totalIn+=value;if(from){cps[from]=cps[from]||{s:0,r:0,n:0,syms:{}};cps[from].r+=value;cps[from].n++;cps[from].syms[txSym]=(cps[from].syms[txSym]||0)+value;daily[day]=daily[day]||{in:0,out:0};daily[day].in+=value;}}
+      if(isOut){totalOut+=value;if(to){cps[to]=cps[to]||{s:0,r:0,n:0,syms:{}};cps[to].s+=value;cps[to].n++;cps[to].syms[txSym]=(cps[to].syms[txSym]||0)+value;daily[day]=daily[day]||{in:0,out:0};daily[day].out+=value;}}
+      if(recent.length<20)recent.push({from:tx.from||'',to:tx.to||'',amount:value,isIn,isOut,ts:day,sym:txSym});
+    });
+  }
+  const cpArr=Object.entries(cps).map(([addr,d])=>({addr,...d,tag:S.tags[addr.toLowerCase()]||null})).sort((a,b)=>b.n-a.n);
+  return{totalIn,totalOut,txCount:txs.length,cps:cpArr,recent,sym,daily,bilateral:cpArr.filter(c=>c.s>0&&c.r>0).length,tagMatches:cpArr.filter(c=>c.tag).length,firstTs,lastTs};
+}
+
+function drawCharts(){
+  const w=S.walletData;if(!w)return;
+  Object.values(S.charts).forEach(c=>{try{c.destroy()}catch{}});S.charts={};
+  const el1=document.getElementById('chart-flow');
+  if(el1){
+    const days=Object.keys(w.daily).sort((a,b)=>{const pa=a.split('/').reverse().join('-'),pb=b.split('/').reverse().join('-');return pa.localeCompare(pb);}).slice(-14);
+    S.charts.flow=new Chart(el1,{type:'bar',data:{labels:days.map(d=>d.slice(0,5)),datasets:[{label:'Entrate',data:days.map(d=>+(w.daily[d]?.in||0).toFixed(4)),backgroundColor:'rgba(26,122,74,0.7)',borderRadius:4},{label:'Uscite',data:days.map(d=>+(w.daily[d]?.out||0).toFixed(4)),backgroundColor:'rgba(192,57,43,0.7)',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#888',font:{size:11}}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label}: ${fmt(ctx.parsed.y,4)} ${w.sym}`}}},scales:{x:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ebebeb'}},y:{ticks:{color:'#aaa',font:{size:10}},grid:{color:'#ebebeb'}}}}});
+  }
+  const el2=document.getElementById('chart-pie');
+  if(el2){
+    S.charts.pie=new Chart(el2,{type:'doughnut',data:{labels:['Entrate','Uscite'],datasets:[{data:[+w.totalIn.toFixed(4),+w.totalOut.toFixed(4)],backgroundColor:['rgba(26,122,74,0.8)','rgba(192,57,43,0.8)'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#888',font:{size:11}}},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${fmt(ctx.parsed,4)} ${w.sym}`}}}}});
+  }
+}
+
+function exportCSV(type){
+  let rows,name;
+  if(type==='wallet'&&S.walletData){
+    rows=[['Indirizzo','Tx','Ricevuto','Inviato','Bidirezionale','Tag','Categoria']];
+    S.walletData.cps.forEach(c=>rows.push([c.addr,c.n,fmt(c.r,6),fmt(c.s,6),(c.s>0&&c.r>0)?'SI':'NO',c.tag?.label||'',c.tag?.category||'']));
+    name='wallet.csv';
+  }else if(type==='tags'){
+    rows=[['Indirizzo','Etichetta','Categoria','Rete','Note']];
+    Object.values(S.tags).forEach(t=>rows.push([t.address,t.label,t.category,t.network||'',t.notes||'']));
+    name='tags.csv';
+  }else return;
+  const blob=new Blob([rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+}
+
+function setTab(t){S.tab=t;S.view=null;render();}
+
+function loadPlatformToAnalysis(i){
+  const p=S.platforms[i];
+  S.risk={...S.risk,mechanics:p.mechanics||'',rate:p.rate||S.risk.rate,period:p.period||S.risk.period,lock:p.lock!=null?p.lock:S.risk.lock,avgInv:p.avgInv||S.risk.avgInv,users:p.users||S.risk.users,ref:p.ref!=null?p.ref:S.risk.ref,refPct:p.refPct||S.risk.refPct,flags:p.flags||S.risk.flags};
+  setTab(0);
+}
+
+function render(){
+  if(S.view==='platform-form'){renderPlatformForm();return;}
+  if(S.view==='tag-form'){renderTagForm();return;}
+  const tCount=Object.keys(S.tags).length,pCount=S.platforms.length;
+  const tabs=[`Analisi`,`Piattaforme${pCount?` (${pCount})`:''}`,`Wallet`,`Entità${tCount?` (${tCount})`:''}`];
+  document.getElementById('root').innerHTML=`
+  <div style="margin-bottom:16px">
+    <div style="font-size:16px;font-weight:600;color:#1a1a1a">HYIP Scanner v9</div>
+    <div style="font-size:12px;color:#aaa;margin-top:2px">Analisi · Wallet · Collasso · Entity tagging</div>
+  </div>
+  <div style="display:flex;border-bottom:1px solid #e0e0e0;margin-bottom:20px;overflow-x:auto;-webkit-overflow-scrolling:touch">
+    ${tabs.map((l,i)=>`<button onclick="setTab(${i})" style="padding:10px 14px;font-size:13px;cursor:pointer;border:none;background:transparent;white-space:nowrap;flex-shrink:0;border-bottom:2px solid ${S.tab===i?'#1a1a1a':'transparent'};color:${S.tab===i?'#1a1a1a':'#aaa'};margin-bottom:-1px;font-family:inherit">${l}</button>`).join('')}
+  </div>
+  <div id="tc"></div>`;
+  const el=document.getElementById('tc');
+  if(S.tab===0)el.innerHTML=renderAnalisi();
+  else if(S.tab===1)el.innerHTML=renderPiattaforme();
+  else if(S.tab===2){el.innerHTML=renderWallet();if(S.walletData)setTimeout(()=>drawCharts(),50);}
+  else el.innerHTML=renderEntita();
+}
+
+function renderAnalisi(){
+  const h=S.risk,r=calcRisk(h),rc=riskColor(r.score);
+  const plans=parsePlans(h.mechanics);
+  return`
+  <div class="sect">Meccanica — testo libero</div>
+  <div style="margin-bottom:6px">
+    <span class="lbl">Inserisci piani, macchinari, compound, VIP...</span>
+    <textarea id="mec" placeholder="es:\nPiano Base: 1.5%/giorno per 30gg\nPiano Gold: 2.2%/giorno per 60gg\nMacchinario A: $500 genera $8/giorno\nCompound disponibile, Referral 5%">${h.mechanics||''}</textarea>
+    <button class="btn btnp" onclick="S.risk.mechanics=document.getElementById('mec').value;render()" style="margin-top:6px">Analizza meccanica</button>
+  </div>
+  ${plans.length>0?`<div class="sect">Piani rilevati (${plans.length})</div>${plans.map(p=>`<div class="card" style="margin-bottom:6px"><div style="font-size:13px;color:#333;margin-bottom:5px">${p.raw}</div><div style="display:flex;gap:10px;flex-wrap:wrap;font-size:12px">${p.pct!=null?`<span style="color:#b7770d;font-weight:500">${p.pct}%/${h.period}</span>`:''}${p.days!=null?`<span style="color:#888">lock ${p.days}gg</span>`:''}${p.usd!=null?`<span style="color:#888">da $${p.usd}</span>`:''}${p.fixed!=null?`<span style="color:#c0392b;font-weight:500">$${p.fixed}/giorno fisso</span>`:''}</div></div>`).join('')}`:''}
+  <div class="sect">Parametri quantitativi</div>
+  <div style="margin-bottom:12px"><span class="lbl">Rendimento e periodo</span>
+    <div style="display:flex;gap:8px">
+      <input type="number" id="ri-rate" inputmode="decimal" value="${h.rate}" min="0.01" step="0.1" style="width:100px" onchange="S.risk.rate=parseFloat(this.value)||0;updateRisk()">
+      <select onchange="S.risk.period=this.value;updateRisk()">
+        <option value="daily" ${h.period==='daily'?'selected':''}>/giorno</option>
+        <option value="weekly" ${h.period==='weekly'?'selected':''}>/settimana</option>
+        <option value="monthly" ${h.period==='monthly'?'selected':''}>/mese</option>
+      </select>
+    </div>
+  </div>
+  <div style="margin-bottom:12px"><span class="lbl">Lock period (giorni)</span><input type="number" id="ri-lock" inputmode="numeric" value="${h.lock}" min="0" style="width:130px" onchange="S.risk.lock=parseInt(this.value)||0;updateRisk()"></div>
+  <div class="g2" style="margin-bottom:12px">
+    <div><span class="lbl">Invest. medio ($)</span><input type="number" inputmode="decimal" value="${h.avgInv}" min="1" onchange="S.risk.avgInv=parseFloat(this.value)||100;updateRisk()"></div>
+    <div><span class="lbl">Investitori (stima)</span><input type="number" inputmode="numeric" value="${h.users}" min="1" onchange="S.risk.users=parseInt(this.value)||100;updateRisk()"></div>
+  </div>
+  <div class="sect">Red flag</div>
+  <label class="chk"><input type="checkbox" ${h.ref?'checked':''} onchange="S.risk.ref=this.checked;updateRisk()"><span>Programma referral attivo</span></label>
+  ${h.ref?`<div style="margin:8px 0"><span class="lbl">Commissione referral (%)</span><input type="number" inputmode="decimal" value="${h.refPct}" min="0" max="50" style="width:130px" onchange="S.risk.refPct=parseFloat(this.value)||0;updateRisk()"></div>`:''}
+  ${FLAGS_FULL.map(([k,l])=>`<label class="chk"><input type="checkbox" ${h.flags[k]?'checked':''} onchange="S.risk.flags['${k}']=this.checked;updateRisk()"><span>${l}</span></label>`).join('')}
+  <div class="sect">Risk Score</div>
+  <div id="risk-out">${riskHTML(r,rc)}</div>`;
+}
+
+function riskHTML(r,rc){
+  return`<div style="background:#fff;border:1px solid #e0e0e0;border-radius:10px;padding:14px;margin-bottom:10px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <span style="font-size:13px;color:#888">Risk Score</span>
+      <span class="pill" style="color:${rc.c};background:${rc.bg}">${rc.l}</span>
+    </div>
+    <div class="track"><div class="bar" style="width:${r.score}%;background:${rc.c}"></div></div>
+    <div style="text-align:right;font-size:12px;color:#aaa;margin-top:4px">${r.score} / 100</div>
+  </div>
+  <div class="g2">
+    <div class="card"><span class="lbl">Pool stimato</span><div class="val">$${fmt(r.pool,0)}</div></div>
+    <div class="card"><span class="lbl">Payout/giorno</span><div class="val red">$${fmt(r.total,0)}</div></div>
+    <div class="card"><span class="lbl">Collasso teorico</span><div class="val red">${r.collapse}gg</div></div>
+    <div class="card"><span class="lbl">Nuovi utenti/gg</span><div class="val yellow">${fmt(r.newUsers,1)}</div></div>
+    <div class="card"><span class="lbl">Raddoppio ogni</span><div class="val yellow">${r.doubling}gg</div></div>
+    <div class="card"><span class="lbl">Break-even</span><div class="val">${r.collapse}gg</div></div>
+  </div>
+  ${r.flags.map(f=>{const fc=flagColor(f.l);return`<div class="flag" style="background:${fc.bg}"><span class="pill" style="color:${fc.c};background:${fc.bg};border:1px solid ${fc.c};flex-shrink:0">${fc.lbl}</span><span style="color:${fc.c}">${f.t}</span></div>`;}).join('')}`;
+}
+
+function updateRisk(){
+  const el=document.getElementById('risk-out');
+  if(!el)return;
+  const r=calcRisk(S.risk),rc=riskColor(r.score);
+  el.innerHTML=riskHTML(r,rc);
+}
+
+function renderPiattaforme(){
+  return`
+  <button class="btn btnp" onclick="S.pForm={name:'',url:'',status:'active',mechanics:'',notes:'',rate:1.5,period:'daily',lock:30,avgInv:200,users:500,ref:false,refPct:5,flags:{anon:false,noAudit:false,ai:false,mlm:false,guaranteed:false}};S.pIdx=null;S.view='platform-form';render()">+ Aggiungi piattaforma</button>
+  ${S.platforms.length===0?`<div class="empty">Nessuna piattaforma salvata.<br>Aggiungila con il bottone sopra.</div>`:''}
+  ${S.platforms.map((p,i)=>{
+    const st=STATUS[p.status]||STATUS.active;
+    const activeFlags=Object.entries(p.flags||{}).filter(([k,v])=>v).map(([k])=>({anon:'Anonimo',noAudit:'No audit',ai:'AI',mlm:'MLM',guaranteed:'Garantito'}[k]||k));
+    return`<div class="platform-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <span class="status-dot" style="background:${st.c}"></span>
+            <span style="font-size:15px;font-weight:600">${p.name}</span>
+          </div>
+          ${p.url?`<div style="font-size:12px;color:#2563eb">${p.url}</div>`:''}
+        </div>
+        <span class="pill" style="color:${st.c};background:transparent;border:1px solid ${st.c};flex-shrink:0">${st.l}</span>
+      </div>
+      ${activeFlags.length>0?`<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px">${activeFlags.map(l=>`<span class="pill red" style="background:#fdecea;color:#c0392b;font-size:10px">${l}</span>`).join('')}</div>`:''}
+      ${p.mechanics?`<div style="font-size:12px;color:#666;margin-bottom:8px;line-height:1.6">${p.mechanics.slice(0,150)}${p.mechanics.length>150?'…':''}</div>`:''}
+      ${p.notes?`<div style="font-size:12px;color:#888;font-style:italic;margin-bottom:8px">${p.notes}</div>`:''}
+      <div class="btnrow">
+        <button class="btn btnsm" onclick="S.pForm={...S.platforms[${i}]};S.pIdx=${i};S.view='platform-form';render()" style="flex:1">✎ Modifica</button>
+        <button class="btn btnsm btnp" onclick="loadPlatformToAnalysis(${i})" style="flex:1">▶ Analizza</button>
+        <button class="btn btnsm btnd" onclick="if(confirm('Eliminare?')){S.platforms.splice(${i},1);save();render()}" style="flex:none">✕</button>
+      </div>
+    </div>`;
+  }).join('')}`;
+}
+
+function renderPlatformForm(){
+  const p=S.pForm,isEdit=S.pIdx!==null;
+  document.getElementById('root').innerHTML=`
+  <button class="back-btn" onclick="S.view=null;S.tab=1;render()">← Indietro</button>
+  <div style="font-size:16px;font-weight:600;margin-bottom:18px">${isEdit?'Modifica':'Nuova'} piattaforma</div>
+  <div style="margin-bottom:12px"><span class="lbl">Nome *</span><input type="text" id="pf-n" value="${p.name||''}" placeholder="es. BitNest, POTS Money..."></div>
+  <div style="margin-bottom:12px"><span class="lbl">URL / dominio</span><input type="text" id="pf-u" value="${p.url||''}" placeholder="https://..."></div>
+  <div style="margin-bottom:12px"><span class="lbl">Stato</span>
+    <select id="pf-s"><option value="active" ${p.status==='active'?'selected':''}>Attiva</option><option value="suspected" ${p.status==='suspected'?'selected':''}>Sospetta</option><option value="scam" ${p.status==='scam'?'selected':''}>Scam / Chiusa</option></select>
+  </div>
+  <div style="margin-bottom:12px"><span class="lbl">Meccanica (testo libero)</span>
+    <textarea id="pf-m" placeholder="Piani, rendimenti, macchinari, compound, referral...">${p.mechanics||''}</textarea>
+  </div>
+  <div class="sect">Parametri rendimento</div>
+  <div style="margin-bottom:12px"><span class="lbl">Rendimento e periodo</span>
+    <div style="display:flex;gap:8px">
+      <input type="number" id="pf-rate" inputmode="decimal" value="${p.rate||1.5}" min="0.01" step="0.1" style="width:100px">
+      <select id="pf-per"><option value="daily" ${(p.period||'daily')==='daily'?'selected':''}>/giorno</option><option value="weekly" ${(p.period||'')==='weekly'?'selected':''}>/settimana</option><option value="monthly" ${(p.period||'')==='monthly'?'selected':''}>/mese</option></select>
+    </div>
+  </div>
+  <div style="margin-bottom:12px"><span class="lbl">Lock period (giorni)</span><input type="number" id="pf-lock" inputmode="numeric" value="${p.lock||0}" min="0" style="width:130px"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+    <div><span class="lbl">Invest. medio ($)</span><input type="number" id="pf-inv" inputmode="decimal" value="${p.avgInv||200}" min="1"></div>
+    <div><span class="lbl">Investitori (stima)</span><input type="number" id="pf-usr" inputmode="numeric" value="${p.users||500}" min="1"></div>
+  </div>
+  <div class="sect">Red flag</div>
+  <label class="chk"><input type="checkbox" id="pf-ref" ${p.ref?'checked':''}><span>Programma referral attivo</span></label>
+  <div style="margin:8px 0 4px"><span class="lbl">Commissione referral (%)</span><input type="number" id="pf-refpct" inputmode="decimal" value="${p.refPct||5}" min="0" max="50" style="width:130px"></div>
+  ${FLAGS_LIST.map(([k,l])=>`<label class="chk"><input type="checkbox" id="pf-${k}" ${(p.flags&&p.flags[k])?'checked':''}><span>${l}</span></label>`).join('')}
+  <div class="sect">Note</div>
+  <div style="margin-bottom:20px"><textarea id="pf-no" placeholder="Wallet associati, red flag trovate, fonti, date...">${p.notes||''}</textarea></div>
+  <button class="btn btnp" onclick="doSavePlatform()">Salva</button>
+  <button class="btn" onclick="S.view=null;S.tab=1;render()" style="margin-top:6px">Annulla</button>`;
+}
+
+function doSavePlatform(){
+  const name=document.getElementById('pf-n').value.trim();
+  if(!name){alert('Inserisci il nome');return;}
+  const flags={};
+  FLAGS_LIST.forEach(([k])=>{flags[k]=document.getElementById('pf-'+k)?.checked||false;});
+  const p={id:S.pIdx!==null?S.platforms[S.pIdx].id:uid(),name,url:document.getElementById('pf-u').value.trim(),status:document.getElementById('pf-s').value,mechanics:document.getElementById('pf-m').value.trim(),notes:document.getElementById('pf-no').value.trim(),rate:parseFloat(document.getElementById('pf-rate')?.value)||1.5,period:document.getElementById('pf-per')?.value||'daily',lock:parseInt(document.getElementById('pf-lock')?.value)||0,avgInv:parseFloat(document.getElementById('pf-inv')?.value)||200,users:parseInt(document.getElementById('pf-usr')?.value)||500,ref:document.getElementById('pf-ref')?.checked||false,refPct:parseFloat(document.getElementById('pf-refpct')?.value)||5,flags,addedAt:S.pIdx!==null?S.platforms[S.pIdx].addedAt:Date.now()};
+  if(S.pIdx!==null)S.platforms[S.pIdx]=p;else S.platforms.unshift(p);
+  save();S.view=null;S.tab=1;render();
+}
+
+function renderWallet(){
+  const w=S.walletData,n=NETS[S.walletNet];
+  return`
+  <div class="sect">Rete blockchain</div>
+  <div style="display:flex;gap:8px;margin-bottom:16px">
+    ${['BSC','ETH','TRON'].map(k=>`<button class="btn btnsm ${S.walletNet===k?'btnp':''}" onclick="S.walletNet='${k}';S.walletData=null;S.walletErr='';render()" style="flex:1">${k}</button>`).join('')}
+  </div>
+  <div style="margin-bottom:12px"><span class="lbl">Indirizzo wallet</span><input type="text" id="wa-addr" value="${S.walletAddr}" placeholder="0x... o T..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></div>
+  ${S.walletNet==='BSC'?`<div style="margin-bottom:12px"><span class="lbl">API Key Moralis — <a href="https://moralis.io" target="_blank">gratuita su moralis.io</a></span><input type="text" id="wa-key" value="${S.apiKeyMoralis}" placeholder="Incolla la key Moralis (JWT)" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></div>`:''}
+  ${S.walletNet==='ETH'?`<div style="margin-bottom:12px"><span class="lbl">API Key Etherscan V2 — <a href="https://etherscan.io/apis" target="_blank">gratuita</a></span><input type="text" id="wa-key" value="${S.apiKeyETH}" placeholder="Incolla la key Etherscan" autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></div>`:''}
+  <button class="btn btnp" onclick="scanWallet()" ${S.walletLoading?'disabled':''}>
+    ${S.walletLoading?'⟳ Scansione...':'Scansiona wallet'}</button>
+  ${S.walletErr?`<div class="er">${S.walletErr}</div>`:''}
+  ${w?`
+  <div class="sect">Risultati — ${S.walletNet}</div>
+  ${w.tagMatches>0?`<div class="ok">⬡ ${w.tagMatches} controparti già taggate nel database</div>`:''}
+  <div class="g2" style="margin-top:12px">
+    <div class="card"><span class="lbl">Entrate</span><div class="val green">+${fmt(w.totalIn)}</div><div style="font-size:11px;color:#aaa;margin-top:3px">${w.sym}</div></div>
+    <div class="card"><span class="lbl">Uscite</span><div class="val red">-${fmt(w.totalOut)}</div><div style="font-size:11px;color:#aaa;margin-top:3px">${w.sym}</div></div>
+    <div class="card"><span class="lbl">Net flow</span><div class="val ${w.totalIn-w.totalOut>=0?'green':'red'}">${w.totalIn-w.totalOut>=0?'+':''}${fmt(w.totalIn-w.totalOut)}</div></div>
+    <div class="card"><span class="lbl">Transazioni</span><div class="val">${w.txCount}</div></div>
+    <div class="card"><span class="lbl">Controparti</span><div class="val">${w.cps.length}</div></div>
+    <div class="card"><span class="lbl">Bidirezionali</span><div class="val ${w.bilateral>0?'yellow':''}">${w.bilateral}</div></div>
+  </div>
+  <div class="sect">Grafici</div>
+  <div class="chart-wrap"><div style="font-size:12px;color:#aaa;margin-bottom:10px">Entrate / Uscite ultimi 14gg</div><div style="height:180px"><canvas id="chart-flow"></canvas></div></div>
+  <div class="chart-wrap"><div style="font-size:12px;color:#aaa;margin-bottom:10px">Distribuzione totale</div><div style="height:180px"><canvas id="chart-pie"></canvas></div></div>
+  ${w.cps.length>0?`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px">
+    <span style="font-size:11px;color:#aaa;text-transform:uppercase;letter-spacing:0.6px">Controparti (${w.cps.length})</span>
+    <button class="btn btnsm" onclick="exportCSV('wallet')">↓ CSV</button>
+  </div>
+  <div style="border:1px solid #e0e0e0;border-radius:10px;overflow:hidden">
+  ${w.cps.slice(0,30).map((cp,i)=>{
+    const bi=cp.s>0&&cp.r>0,tag=cp.tag,topSyms=Object.keys(cp.syms||{}).slice(0,2).join('/');
+    return`<div class="cprow ${tag?'match-row':''}" style="padding:10px 12px;background:${tag?'#f0faf5':(i%2?'#fafafa':'#fff')}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <a href="${n.ex}${cp.addr}" target="_blank" style="font-size:12px;font-family:monospace;color:#2563eb">${short(cp.addr)}</a>
+        <div style="display:flex;gap:5px;align-items:center;flex-shrink:0">
+          ${bi?`<span class="pill" style="color:#b7770d;background:#fef9e7;font-size:10px">BI</span>`:''}
+          ${tag?`<span class="tagbadge" style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${tag.label}</span>
+            <button class="btn btnsm" onclick="S.tagForm={addr:'${cp.addr}',label:${JSON.stringify(tag.label)},category:'${tag.category}',network:'${S.walletNet}',notes:${JSON.stringify(tag.notes||'')},existing:true};S.view='tag-form';render()" style="padding:4px 8px;font-size:11px">✎</button>`
+          :`<button class="btn btnsm" onclick="S.tagForm={addr:'${cp.addr}',label:'',category:'platform',network:'${S.walletNet}',notes:'',existing:false};S.view='tag-form';render()" style="color:#1a7a4a;border-color:#a0d8b8;padding:4px 10px">+ Tag</button>`}
+        </div>
+      </div>
+      <div style="display:flex;gap:12px;font-size:12px;color:#aaa">
+        <span>${cp.n} tx</span>
+        ${cp.r>0?`<span style="color:#1a7a4a">↓ ${fmt(cp.r,3)} ${topSyms}</span>`:''}
+        ${cp.s>0?`<span style="color:#c0392b">↑ ${fmt(cp.s,3)} ${topSyms}</span>`:''}
+      </div>
+    </div>`;
+  }).join('')}
+  ${w.cps.length>30?`<div style="padding:10px;text-align:center;font-size:12px;color:#aaa">+${w.cps.length-30} altre nel CSV</div>`:''}
+  </div>`:''}
+  `:''}`;
+}
+
+function renderTagForm(){
+  const tf=S.tagForm;
+  document.getElementById('root').innerHTML=`
+  <button class="back-btn" onclick="S.view=null;render()">← Indietro</button>
+  <div style="font-size:16px;font-weight:600;margin-bottom:18px">${tf.existing?'Modifica tag':'Nuovo tag'}</div>
+  ${tf.addr?`<div style="margin-bottom:12px"><span class="lbl">Indirizzo</span><div style="padding:12px;background:#f5f5f5;border-radius:10px;font-size:12px;color:#888;font-family:monospace;word-break:break-all">${tf.addr}</div></div>`
+  :`<div style="margin-bottom:12px"><span class="lbl">Indirizzo wallet</span><input type="text" id="tf-addr" placeholder="0x... o T..." autocomplete="off" autocorrect="off" autocapitalize="none" spellcheck="false"></div>`}
+  <div style="margin-bottom:12px"><span class="lbl">Etichetta *</span><input type="text" id="tf-label" value="${tf.label||''}" placeholder="es. POTS Money - wallet principale"></div>
+  <div style="margin-bottom:12px"><span class="lbl">Categoria</span>
+    <select id="tf-cat">${Object.entries(CATS).map(([k,v])=>`<option value="${k}" ${tf.category===k?'selected':''}>${v.l}</option>`).join('')}</select>
+  </div>
+  <div style="margin-bottom:12px"><span class="lbl">Rete</span>
+    <select id="tf-net">${['BSC','ETH','TRON','?'].map(k=>`<option value="${k}" ${(tf.network||'BSC')===k?'selected':''}>${k==='?'?'Sconosciuta':k}</option>`).join('')}</select>
+  </div>
+  <div style="margin-bottom:20px"><span class="lbl">Note</span><textarea id="tf-notes" placeholder="Analizzato il... / Collegato a...">${tf.notes||''}</textarea></div>
+  <button class="btn btnp" onclick="doSaveTag()">Salva tag</button>
+  ${tf.existing?`<button class="btn btnd" onclick="if(confirm('Eliminare?')){delete S.tags[${JSON.stringify(tf.addr.toLowerCase())}];save();S.view=null;render()}">Elimina tag</button>`:''}
+  <button class="btn" onclick="S.view=null;render()" style="margin-top:6px">Annulla</button>`;
+}
+
+function doSaveTag(){
+  const addrRaw=S.tagForm.addr||document.getElementById('tf-addr')?.value?.trim()||'';
+  const addr=addrRaw.toLowerCase(),label=document.getElementById('tf-label').value.trim();
+  if(!addr){alert('Indirizzo mancante');return;}if(!label){alert('Inserisci etichetta');return;}
+  S.tags[addr]={address:addrRaw,label,category:document.getElementById('tf-cat').value,network:document.getElementById('tf-net').value,notes:document.getElementById('tf-notes').value.trim(),addedAt:S.tags[addr]?.addedAt||Date.now()};
+  save();S.view=null;render();
+}
+
+function renderEntita(){
+  const tags=Object.values(S.tags),q=S.search.toLowerCase();
+  const filtered=q?tags.filter(t=>t.label.toLowerCase().includes(q)||t.address.toLowerCase().includes(q)):tags;
+  filtered.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));
+  return`
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <div><div style="font-size:14px;font-weight:600">${tags.length} wallet taggati</div><div style="font-size:12px;color:#aaa;margin-top:2px">Cross-check automatico su ogni scansione</div></div>
+    <div style="display:flex;gap:6px">
+      ${tags.length>0?`<button class="btn btnsm" onclick="exportCSV('tags')">↓ CSV</button>`:''}
+      <button class="btn btnsm btnp" onclick="S.tagForm={addr:'',label:'',category:'platform',network:'BSC',notes:'',existing:false};S.view='tag-form';render()">+ Nuovo</button>
+    </div>
+  </div>
+  ${tags.length>0?`<div style="margin-bottom:14px"><input type="text" placeholder="Cerca..." value="${S.search}" oninput="S.search=this.value;render()"></div>`:''}
+  ${filtered.map(t=>{
+    const cs=CATS[t.category]||CATS.other;
+    const isLinked=S.walletData?.cps?.some(c=>c.addr.toLowerCase()===t.address.toLowerCase());
+    return`<div style="background:${isLinked?'#f0faf5':'#fff'};border:1px solid ${isLinked?'#a0d8b8':'#e0e0e0'};border-radius:10px;padding:13px 14px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:5px">
+            <span style="font-size:14px;font-weight:600" class="${cs.c}">${t.label}</span>
+            <span class="pill ${cs.c}" style="background:${cs.bg==='bg-red'?'#fdecea':cs.bg==='bg-yellow'?'#fef9e7':cs.bg==='bg-blue'?'#e8f0fe':cs.bg==='bg-green'?'#e8f8f0':'#f0f0f0'};font-size:11px">${cs.l}</span>
+            ${t.network?`<span class="pill" style="color:#aaa;background:#f0f0f0;font-size:11px">${t.network}</span>`:''}
+            ${isLinked?`<span class="tagbadge">⬡ nel wallet attivo</span>`:''}
+          </div>
+          <div style="font-size:11px;color:#aaa;font-family:monospace;margin-bottom:${t.notes?'5px':'0'}">${short(t.address)}</div>
+          ${t.notes?`<div style="font-size:12px;color:#888;font-style:italic">${t.notes}</div>`:''}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn btnsm" onclick="S.tagForm={addr:${JSON.stringify(t.address)},label:${JSON.stringify(t.label)},category:'${t.category}',network:'${t.network||'BSC'}',notes:${JSON.stringify(t.notes||'')},existing:true};S.view='tag-form';render()">✎</button>
+          <button class="btn btnsm btnd" onclick="if(confirm('Eliminare?')){delete S.tags[${JSON.stringify(t.address.toLowerCase())}];save();render()}">✕</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}
+  ${tags.length===0?`<div class="empty">Nessun wallet taggato ancora.<br>Vai in Wallet → scansiona → clicca + Tag.</div>`:''}`;
+}
+
+render();
+</script>
+</body>
+</html>
